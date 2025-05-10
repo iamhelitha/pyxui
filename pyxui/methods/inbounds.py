@@ -47,3 +47,24 @@ class Inbounds:
         )
 
         return self.verify_response(response)
+        
+    def delete_inbound(
+        self: "pyxui.XUI",
+        inbound_id: int
+    ) -> Union[dict, errors.NotFound]:
+        """Delete an inbound from the panel.
+
+        Parameters:
+            inbound_id (``int``):
+                Inbound id to delete
+        
+        Returns:
+            `~Dict | errors.NotFound`: On success, a dict is returned else 404 error will be raised
+        """
+        
+        response = self.request(
+            path=f"del/{inbound_id}",
+            method="POST"
+        )
+
+        return self.verify_response(response)

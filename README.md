@@ -6,6 +6,18 @@ An application with python that allows you to modify your xui panel ([alireza0 x
 pip install -U git+https://github.com/staliox/pyxui.git
 ```
 
+## Supported Protocols
+PyXUI now supports multiple protocols:
+- VMESS
+- VLESS
+- TROJAN
+- Shadowsocks
+
+Each protocol has its specific configuration requirements:
+- VMESS/VLESS: Uses UUID for client identification
+- TROJAN: Uses password for authentication
+- Shadowsocks: Uses email and encryption method
+
 ## How To Use
 - Import pyxui in your .py file
 ```python
@@ -78,51 +90,94 @@ get_inbounds = xui.get_inbounds()
 
 - Add client to the existing inbound
 ```python
-get = xui.add_client(
+# For VMESS/VLESS
+client = xui.add_client(
     inbound_id=1,
-    email="example@gmal.com",
+    protocol="vless",  # or "vmess"
+    email="example@gmail.com",
     uuid="5d3d1bac-49cd-4b66-8be9-a728efa205fa",
-    enable = True,
-    flow = "",
-    limit_ip = 0,
-    total_gb = 5368709120,
-    expire_time = 1684948641772, # You must pass 13 digit timestamp
-    telegram_id = "",
-    subscription_id = ""
+    enable=True,
+    flow="",
+    limit_ip=0,
+    total_gb=5368709120,
+    expire_time=1684948641772,
+    telegram_id="",
+    subscription_id=""
+)
+
+# For TROJAN
+client = xui.add_client(
+    inbound_id=1,
+    protocol="trojan",
+    email="example@gmail.com",
+    password="your_secure_password",
+    enable=True,
+    limit_ip=0,
+    total_gb=5368709120,
+    expire_time=1684948641772
+)
+
+# For Shadowsocks
+client = xui.add_client(
+    inbound_id=1,
+    protocol="shadowsocks",
+    email="example@gmail.com",
+    method="aes-256-gcm",  # Encryption method
+    enable=True,
+    limit_ip=0,
+    total_gb=5368709120,
+    expire_time=1684948641772
 )
 ```
 
 - Update the existing client
 ```python
-get = xui.update_client(
+# Similar to add_client, but for updating existing clients
+client = xui.update_client(
     inbound_id=1,
-    email="example@gmal.com",
-    uuid="5d3d1bac-49cd-4b66-8be9-a728efa205fa",
-    enable = True,
-    flow = "",
-    limit_ip = 0,
-    total_gb = 5368709120,
-    expire_time = 1684948641772,
-    telegram_id = "",
-    subscription_id = ""
+    protocol="vless",  # Specify the protocol
+    email="example@gmail.com",
+    # Protocol-specific fields (uuid, password, or method)
+    uuid="5d3d1bac-49cd-4b66-8be9-a728efa205fa",  # For VMESS/VLESS
+    enable=True,
+    flow="",
+    limit_ip=0,
+    total_gb=5368709120,
+    expire_time=1684948641772,
+    telegram_id="",
+    subscription_id=""
 )
 ```
 
 - Get client's information:
 ```python
+# For VMESS/VLESS
 get_client = xui.get_client(
     inbound_id=1,
     email="Me",
-    uuid="5d3d1bac-49cd-4b66-8be9-a728efa205fa" # Make note you don't have to pass both of them (emaill, uuid), just one is enough
+    uuid="5d3d1bac-49cd-4b66-8be9-a728efa205fa"  # Either email or uuid is required
 )
 
-# Result
+# For TROJAN
+get_client = xui.get_client(
+    inbound_id=1,
+    email="Me",
+    password="your_secure_password"  # Either email or password is required
+)
+
+# For Shadowsocks
+get_client = xui.get_client(
+    inbound_id=1,
+    email="Me"  # Email is required for Shadowsocks
+)
+
+# Result example
 {
      'email': 'Me',
      'enable': True,
      'expiryTime': 0,
      'flow': 'xtls-rprx-vision',
-     'id': '5d3d1bac-49cd-4b66-8be9-a728efa205fa',
+     'id': '5d3d1bac-49cd-4b66-8be9-a728efa205fa',  # or 'password' for TROJAN
      'limitIp': 0,
      'subId': '',
      'tgId': '',
@@ -130,44 +185,12 @@ get_client = xui.get_client(
 }
 ```
 
-- Get client's statistics:
-```python
-get_client = xui.get_client_stats(
-    inbound_id=1,
-    email="Me",
-)
-
-# Result
-{
-     'id': 1,
-     'inboundId': 1,
-     'enable': True,
-     'email': 'Me',
-     'up': 111494230,
-     'down': 620533614,
-     'expiryTime': 0,
-     'total': 0
-}
-```
-
-- Delete client from the existing inbound:
-```python
-get_client = xui.delete_client(
-    inbound_id=1,
-    email="Me",
-    uuid="5d3d1bac-49cd-4b66-8be9-a728efa205fa" # Make note you don't have to pass both of them (email, uuid), just one is enough
-)
-```
-
-# Create vmess and vless config string
-- Import config_generator
+- Generate configuration strings
 ```python
 from pyxui.config_gen import config_generator
-```
 
-- VMESS:
-```python
-config = {
+# VMESS Configuration
+vmess_config = {
     "v": "2",
     "ps": "Staliox-Me",
     "add": "staliox.com",
@@ -184,23 +207,16 @@ config = {
     "alpn": "h2,http/1.1",
     "fp": "chrome"
 }
+vmess_string = config_generator("vmess", vmess_config)
 
-generate_config = config_generator("vmess", config)
-
-# Result
-vmess://eyJ2IjogIjIiLCAicHMiOiAiU3RhbGlveC1NZSIsICJhZGQiOiAic3RhbGlveC5jb20iLCAicG9ydCI6ICI0NDMiLCAiaWQiOiAiYTg1ZGVmNTctMGE4Ni00M2QxLWIxNWMtMDQ5NDUxOTA2N2M2IiwgImFpZCI6ICIwIiwgInNjeSI6ICJhdXRvIiwgIm5ldCI6ICJ0Y3AiLCAidHlwZSI6ICJ3cyIsICJob3N0IjogInN0YWxpb3guc2l0ZSIsICJwYXRoIjogIi8iLCAidGxzIjogInRscyIsICJzbmkiOiAic3RhbGlveC5zaXRlIiwgImFscG4iOiAiaDIsaHR0cC8xLjEiLCAiZnAiOiAiY2hyb21lIn0=
-```
-
-- VLESS:
-```python
-config = {
+# VLESS Configuration
+vless_config = {
     "ps": "Staliox-Me",
     "add": "staliox.com",
     "port": "443",
     "id": "a85def57-0a86-43d1-b15c-0494519067c6"
 }
-
-data = {
+vless_data = {
     "security": "tls",
     "type": "ws",
     "host": "staliox.site",
@@ -209,9 +225,37 @@ data = {
     "alpn": "h2,http/1.1",
     "fp": "chrome"
 }
+vless_string = config_generator("vless", vless_config, vless_data)
 
-generate_config = config_generator("vless", config, data)
+# TROJAN Configuration
+trojan_config = {
+    "ps": "Staliox-Me",
+    "add": "staliox.com",
+    "port": "443",
+    "password": "your_secure_password"
+}
+trojan_data = {
+    "security": "tls",
+    "type": "ws",
+    "host": "staliox.site",
+    "path": "/",
+    "sni": "staliox.site",
+    "alpn": "h2,http/1.1",
+    "fp": "chrome"
+}
+trojan_string = config_generator("trojan", trojan_config, trojan_data)
 
-# Result
-vless://a85def57-0a86-43d1-b15c-0494519067c6@staliox.com:443?security=tls&type=ws&host=staliox.site&path=%2F&tls=tls&sni=staliox.site&alpn=h2%2Chttp%2F1.1&fp=chrome#Staliox-Me
+# Shadowsocks Configuration
+ss_config = {
+    "ps": "Staliox-Me",
+    "add": "staliox.com",
+    "port": "443",
+    "method": "aes-256-gcm",
+    "password": "your_secure_password"
+}
+ss_data = {
+    "plugin": "v2ray-plugin",
+    "plugin-opts": "tls;host=staliox.site;path=/"
+}
+ss_string = config_generator("shadowsocks", ss_config, ss_data)
 ```
