@@ -339,8 +339,22 @@ class Clients:
             password=password
         )
         
+        # Get the appropriate identifier based on protocol
+        if protocol in [Protocol.VMESS, Protocol.VLESS]:
+            client_id = find_client.get('id')
+            if not client_id:
+                raise ValueError(f"UUID not found for {protocol.value} client")
+        elif protocol == Protocol.TROJAN:
+            client_id = find_client.get('password')
+            if not client_id:
+                raise ValueError("Password not found for TROJAN client")
+        else:  # Shadowsocks
+            client_id = find_client.get('email')
+            if not client_id:
+                raise ValueError("Email not found for Shadowsocks client")
+        
         response = self.request(
-            path=f"updateClient/{find_client.get('id') or find_client.get('password')}",
+            path=f"updateClient/{client_id}",
             method="POST",
             params=params
         )
